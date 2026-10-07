@@ -10,7 +10,7 @@ const Login = ({mode = "login"}) => {
     const isRegister = mode === "register";
     const navigate = useNavigate()
 
-    const {Login, register} = useApp()
+    const {login, register} = useApp()
 
     const [form, setForm] = useState({name: "", email: "", password: ""})
     const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ const Login = ({mode = "login"}) => {
         e.preventDefault();
         setIsLoading(true)
         const ok = isRegister ? await register(form.name, form.email, form.password) :
-        await Login(form.email, form.password);
+        await login(form.email, form.password);
         setIsLoading(false)
         if(ok) navigate("/")
 
