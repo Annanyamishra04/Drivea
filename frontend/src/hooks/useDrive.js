@@ -44,8 +44,8 @@ export function useDrive(){
                 });
                 clearInterval(interval);
                 setUploadProgress(100);
-                await new Promise((r)=setTimeout(r,300))
-                toast.success(`${data.files.length} false(s) uploaded successfully!`);
+                await new Promise((r)=>setTimeout(r,300))
+                toast.success(`${data.files.length} file(s) uploaded successfully!`);
                 await fetchDriveContent(folder_id);
                 await refreshUser();
             } catch (err) {
@@ -72,20 +72,20 @@ export function useDrive(){
         return runAction(
             api.patch(`/api/${endpoint}/${id}/rename`,{name : newName}),
             `${isFolder ? "Folder" : "File"} renamed.`, "Error renaming item.", ()=>
-                fetchDriveContent()
+                fetchDriveContent(currentFolderId)
         )
     }
 
     const moveItem = (item , targetFolderId)=>{
         const isFolder = isFolderItem(item);
         const endpoint = isFolder ? "folders" : "files";
-        const payload = isFolder ? {target_parent : targetFolderId} : {targetfolder : targetFolderId};
+        const payload = isFolder ? {target_parent : targetFolderId} : {target_folder : targetFolderId};
 
         const id = item.id || item;
         return runAction (
             api.patch(`/api/${endpoint}/${id}/move`, payload),
              `${isFolder ? "Folder" : "File"} moved.`, "Error moving item.", ()=>
-                fetchDriveContent()
+                fetchDriveContent(currentFolderId)
 
         )
     }
@@ -98,7 +98,7 @@ export function useDrive(){
         return runAction (
             api.delete(`/api/${endpoint}/${id}`),
              `${isFolder ? "Folder" : "File"} moved to Trash.`, "Error deleting item.", ()=>
-                fetchDriveContent()
+                fetchDriveContent(currentFolderId)
 
         )
     }
