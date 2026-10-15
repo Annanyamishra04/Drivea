@@ -17,8 +17,11 @@ const FilePreview = ({file, onClose}) => {
         api.get(`/api/files/${file.id}/preview`).then(({data})=>{
             if(isMounted) setPreviewUrl(data.url);
         })
-        .catch(()=>{
-            if(isMounted) setError("Failed to load file preview.");
+        .catch((err)=>{
+            if(isMounted){ 
+                const message = err.response?.data?.error;
+                setError(typeof message === "string" ? message: "Failed to load file preview.");
+            }
         })
         .finally(()=>{
             if(isMounted) setIsLoading(false)
