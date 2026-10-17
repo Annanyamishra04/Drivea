@@ -13,10 +13,12 @@ const CreateFolderModal = ({isOpen, onClose}) => {
     e.preventDefault();
     if(!name.trim()) return;
     setIsLoading(true);
-    await createFolder(name.trim())
+    const created = await createFolder(name.trim())
     setIsLoading(false)
+    if(created){
     setName("")
     onClose()
+    }
   }
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="New Folder">
