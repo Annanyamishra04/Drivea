@@ -1,5 +1,5 @@
 import { sql } from "../config/db.js"
-import { deleteMultipleFromStorage } from "../utils/s3Helper.js";
+import { deleteFromStorage, deleteMultipleFromStorage } from "../utils/s3Helper.js";
 
 
 export const getFolderHierarchyIds = async(folderId, ownerId)=>{
@@ -77,4 +77,33 @@ export const permanentDeleteFolderHierarchy = async (folderId, ownerId) =>{
         await adjustUserStorage(ownerId, -totalFreedSize);
     }
 
+}
+
+export const permanentDeleteFileRecord = async (file , ownerId)=>{
+    await Promise.all([deleteFromStorage(file.s3_key), cleanupShareLinks([file.id], []),
+    sql`DELETE FROM files WHERE id = ${file.id}`])
+    await adjustUserStorage(ownerId, -Number(file.size))
+}
+
+export const emptyTrashHierarchy = async(ownerId)=>{
+    const [trashedFiles, trashedFolders] = await Promise.all([
+        sql`SELECT id , s3_key, size FROM files WHERE owner_id = ${ownerId} AND is_trashed = true`,
+
+        sql`SELECT id FROM folders WHERE owner_id = ${ownerId} AND is_trashed = true`,
+
+    ]);
+    const s3Keys = trashedFiles.map((f)=> f.s3_key)
+    const totalFreedBytes = trashedFiles.reduce((acc, f)=> acc + Number(f.size), 0);
+    const trashedFilesIds = trashedFiles.map((f)=> f.id)
+    const trashedFolderIds = trashedFolders.map((f)=> f.id)
+
+    await Promise.all([
+        s3Keys.length > 0 ? deleteMultipleFromStorage(s3Keys) : Promise.resolve(),
+        cleanupShareLinks(trashedFilesIds, trashedFolderIds),
+        sql`DELETE FROM files WHERE owner_id = ${ownerId} AND is_trashed = true`,
+        sql`DELETE FROM folders WHERE owner_id = ${ownerId} AND is_trashed = true`,
+    ]);
+    if(totalFreedBytes>0){
+        await adjustUserStorage(ownerId, -totalFreedBytes)
+    }
 }
