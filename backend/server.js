@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import { initDB } from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import folderRouter from "./routes/folderRoutes.js";
+import fileRouter from "./routes/fileRoutes.js";
+import trashRouter from "./routes/trashRoutes.js";
 
 const app = express()
 
@@ -23,6 +25,8 @@ app.get("/", (_req, res) => res.send("Server is Running"))
 //App API routes
 app.use("/api/auth", authRouter)
 app.use("/api/folders", folderRouter)
+app.use("/api/files", fileRouter)
+app.use("/api/trash", trashRouter)
 
 //Error Handling Middleware
 app.use((err, _req, res, _next)=>{
