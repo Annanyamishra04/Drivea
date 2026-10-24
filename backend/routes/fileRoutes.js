@@ -14,6 +14,6 @@ fileRouter.patch("/:id/rename",renameFile)
 fileRouter.patch("/:id/move",moveFile)
 fileRouter.delete("/:id",softDeleteFile)
 fileRouter.post("/:id/restore",restoreFile)
-fileRouter.post("/:id/permanent",permanentDeleteFile)
+fileRouter.delete("/:id/permanent",permanentDeleteFile)
 
 export default fileRouter;

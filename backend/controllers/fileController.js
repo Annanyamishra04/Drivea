@@ -44,7 +44,7 @@ export const uploadFiles = async (req , res)=>{
                 const randomString = crypto.randomBytes(8).toString("hex");
                 const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}${fileExt}`
 
-                await uploadToStorage(multerFile.buffer, s3Key, multerFile.mimeType)
+                await uploadToStorage(multerFile.buffer, s3Key, multerFile.mimetype)
                 const [row] = await sql`INSERT INTO files (name, original_name, mime_type, size, s3_key, folder_id, owner_id)
                 VALUES (${multerFile.originalname}, ${multerFile.originalname}, ${multerFile.mimetype}, ${multerFile.size}, ${s3Key}, ${targetFolderId}, ${req.user.id})
                 RETURNING *`;
@@ -66,7 +66,7 @@ export const getFiles = async (req , res)=>{
     try {
         const {folder, folder_id, search, sort = "name_asc",page=1 , limit = 50} = req.query;
         const pageNum = Math.max(1, parseInt(page,10) || 1);
-        const limitNum = Math.max(1, parseInt(limit,10) || 50);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
         const offset = (pageNum - 1) * limitNum;
         const orderBy = SORT_MAP[sort] || SORT_MAP.name_asc;
 
@@ -74,16 +74,16 @@ export const getFiles = async (req , res)=>{
         const targetFolderId = !targetFolder || targetFolder === "null" || targetFolder === "root" ?
         null : targetFolder;
         const isSearch = Boolean(search?.trim())
-        const pattern = `%${search?.trim()}%`;
+        const pattern = `%${search?.trim() ?? ""}%`;
 
         const [rows, countRows] = await Promise.all([
             sql`SELECT * FROM files WHERE owner_id = ${req.user.id} AND is_trashed = false
             AND (${isSearch}::boolean = true AND name ILIKE ${pattern} OR ${isSearch}::boolean = false AND
-            folder_id IS NOT DISTINCT FROM ${targetFolder}) ORDER BY ${sql.unsafe(orderBy)} LIMIT ${limitNum} OFFSET ${offset}`,
+            folder_id IS NOT DISTINCT FROM ${targetFolderId}) ORDER BY ${sql.unsafe(orderBy)} LIMIT ${limitNum} OFFSET ${offset}`,
 
-            sql`COUNT(*)::int AS total FROM files WHERE owner_id = ${req.user.id} AND is_trashed = false
+            sql`SELECT COUNT(*)::int AS total FROM files WHERE owner_id = ${req.user.id} AND is_trashed = false
             AND (${isSearch}::boolean = true AND name ILIKE ${pattern} OR ${isSearch}::boolean = false AND
-            folder_id IS NOT DISTINCT FROM ${targetFolder})`,
+            folder_id IS NOT DISTINCT FROM ${targetFolderId})`,
             
         ]) 
         const totalFiles = countRows[0].total;
@@ -177,7 +177,7 @@ export const softDeleteFile = async (req , res)=>{
         }
 
         await cleanupShareLinks([file.id], [])
-        return res.status(200).json({error : "File move to Trash."});
+        return res.status(200).json({message : "File moved to Trash."});
     } catch (error) {
         return res.status(500).json({error: error.message});
     }
@@ -191,7 +191,7 @@ export const restoreFile = async (req , res)=>{
         if(!file){
             return res.status(404).json({error : "File not found in Trash."});
         }
-        return res.status(200).json({error : "File restored from Trash."});
+        return res.status(200).json({message : "File restored from Trash."});
     } catch (error) {
         return res.status(500).json({error: error.message});
     }

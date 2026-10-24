@@ -18,7 +18,7 @@ export const createFolder = async( req , res)=>{
             if(!parentFolder){
             return res.status(404).json({error:"Parent folder not found"});
         }
-        folderPath=[...createFolder(parentFolder || []), parentFolder.id]
+        folderPath=[...(parentFolder.path || []), parentFolder.id]
         }
         const [existing] = await sql`SELECT id FROM folders
         WHERE name = ${name.trim()} AND parent_id IS NOT DISTINCT FROM ${targetParent || null} AND owner_id= ${req.user.id} AND is_trashed = false`
@@ -54,7 +54,7 @@ export const getFolders = async( req , res)=>{
 
 export const getFolderDetails = async( req , res)=>{
     try {
-        const [folder] = await sql`SELECT * FROM folders WHERE id = ${renameFolder.params.id} AND
+        const [folder] = await sql`SELECT * FROM folders WHERE id = ${req.params.id} AND
         owner_id = ${req.user.id} AND  is_trashed = false`;
         if(!folder){
             return res.status(404).json({error: "Folder not found"});
@@ -91,7 +91,7 @@ export const renameFolder = async( req , res)=>{
         if(!folder){
             return res.status(404).json({error: "Folder not found."});
         }
-        return res.status(404).json({error: "Folder not found"});
+        return res.status(200).json({folder});
     } catch (error) {
         return res.status(500).json({error: error.message});
     }
@@ -100,7 +100,7 @@ export const renameFolder = async( req , res)=>{
 
 export const moveFolder = async( req , res)=>{
     try {
-        const targetParent =req.body.targetParent ?? req.body.targetParent;
+        const targetParent =req.body.target_parent ?? req.body.targetParent;
         const folderId = req.params.id;
         if(targetParent === folderId){
             return res.status(400).json({error: "Cannot move folder itself."});
@@ -128,10 +128,10 @@ export const moveFolder = async( req , res)=>{
 
         }
             await sql`UPDATE folders SET parent_id = ${targetParent || null}, path = ${newPath},
-            updated_At = NOW() WHERE id=${folderId}`;
+            updated_at = NOW() WHERE id=${folderId}`;
 
             const descendants = await sql`SELECT id, path FROM folders
-            WHERE ${folderId} = ANY(path::text[]) AND owner_id = ${req.user.id}`;
+            WHERE ${folderId} = ANY(path) AND owner_id = ${req.user.id}`;
 
             if(descendants.length > 0){
                 await Promise.all(

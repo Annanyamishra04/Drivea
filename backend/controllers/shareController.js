@@ -7,7 +7,7 @@ export const createShareLink = async (req , res)=>{
     try {
         const resourceType = req.body.resource_type ?? req.body.resourceType;
         const resourceId = req.body.resource_id ?? req.body.resourceId;
-        const {permission = "dowload" , expires_at, expiresAt} = req.body;
+        const {permission = "download" , expires_at, expiresAt} = req.body;
 
         const targetExpiresAt = expires_at ?? expiresAt
 
@@ -25,7 +25,8 @@ export const createShareLink = async (req , res)=>{
         if(!resource){
             return res.status(404).json({error: `${resourceType} not found.`});
         }
-        const [existing] = await sql`SELECT * FROM share_links WHERE resource_id = ${resource_id}
+        const [existing] = await sql`SELECT * FROM share_links WHERE resource_type = ${resourceType} 
+        AND resource_id = ${resourceId}
         AND owner_id = ${req.user.id}`;
 
         if(existing && existing.expires_at && new Date() > new Date(existing.expires_at)){
@@ -35,7 +36,7 @@ export const createShareLink = async (req , res)=>{
         }
 
         const token = crypto.randomBytes(16).toString("hex");
-        const [shareLink] = await sql`NSERT INTO share_links (token, resource_type, resource_id, owner_id, permission, expires_at)
+        const [shareLink] = await sql`INSERT INTO share_links (token, resource_type, resource_id, owner_id, permission, expires_at)
         VALUES (${token}, ${resourceType}, ${resource.id}, ${req.user.id}, ${permission}, ${targetExpiresAt ? new Date(targetExpiresAt) : null})
         RETURNING *`;
 
@@ -109,7 +110,7 @@ export const accessShareLink = async (req , res)=>{
             return res.status(200).json({
                 resource_type: "file",
                 file,
-                url: dowloadUrl,
+                url: downloadUrl,
                 permission: shareLink.permission,
                 owner,
 
@@ -157,7 +158,7 @@ export const deleteShareLink = async (req , res)=>{
             return res.status(404).json({error : "Share link not found."});
         }
 
-        return res.status(200).json({ messgae: "Share link revoked successfully."});
+        return res.status(200).json({ message: "Share link revoked successfully."});
         
     } catch (error) {
         return res.status(500).json({error : error.message});
