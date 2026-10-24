@@ -79,7 +79,7 @@ export const getFiles = async (req , res)=>{
         const [rows, countRows] = await Promise.all([
             sql`SELECT * FROM files WHERE owner_id = ${req.user.id} AND is_trashed = false
             AND (${isSearch}::boolean = true AND name ILIKE ${pattern} OR ${isSearch}::boolean = false AND
-            folder_id IS NOT DISTINCT FROM ${targetFolder}) ORDER BY ${sql.unsafe(orderBy)} IMIT ${limitNum} OFFSET ${offset}`,
+            folder_id IS NOT DISTINCT FROM ${targetFolder}) ORDER BY ${sql.unsafe(orderBy)} LIMIT ${limitNum} OFFSET ${offset}`,
 
             sql`COUNT(*)::int AS total FROM files WHERE owner_id = ${req.user.id} AND is_trashed = false
             AND (${isSearch}::boolean = true AND name ILIKE ${pattern} OR ${isSearch}::boolean = false AND
