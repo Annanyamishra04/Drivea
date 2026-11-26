@@ -45,7 +45,8 @@ export const AppProvider = ({children})=>{
     const authAction = async (requestFn, successMsg, errorFallback)=>{
         try {
             const {data} = await requestFn();
-            setUser(data.user)
+            if (data.token) localStorage.setItem("token", data.token)
+                setUser(data.user)
             if(successMsg) toast.success(successMsg)
                 return true;
         } catch (error) {
@@ -67,15 +68,16 @@ export const AppProvider = ({children})=>{
     }
 
     const logout = async ()=>{
-        try {
-            await api.post("/api/auth/logout")
-            setUser(null)
-            toast.success("Logged out")
-        } catch (error) {
-            toast.error("Logout error");
-            
-        }
+    try {
+        await api.post("/api/auth/logout")
+    } catch (error) {
+        toast.error("Logout error");
+    } finally {
+        localStorage.removeItem("token")
+        setUser(null)
+        toast.success("Logged out")
     }
+}
 
     const fetchDriveContent = useCallback(
         async (folderId = currentFolderId, search=searchQuery, sort = sortBy)=>{

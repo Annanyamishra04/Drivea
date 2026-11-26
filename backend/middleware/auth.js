@@ -3,7 +3,8 @@ import { sql } from "../config/db.js";
 
 
 export const protect = async ( req , res , next)=>{
-    const token = req.cookies?.token;
+    const header = req.headers.authorization;
+    const token = req.cookies?.token || (header?.startsWith("Bearer ") ? header.split(" ")[1] : null);
 
     if(!token){
         return res.status(401).json({error: "Unauthorized. Please log in."});
